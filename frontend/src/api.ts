@@ -6,7 +6,7 @@ export async function api<T>(path: string,body?:unknown): Promise<T> {
     const response = await fetch (`${API_URL}${path}`, {
         method: body === undefined ? 'GET' : 'POST',
         headers: { 'Content-Type': 'application/json'},
-        body: body === undefined ? undefined :JSON.stringify(body),
+        body: body === undefined ? undefined: JSON.stringify(body),
     });
 
     const data = await response.json();
@@ -16,7 +16,7 @@ export async function api<T>(path: string,body?:unknown): Promise<T> {
         throw new Error(message ?? 'Something went wrong');
     }
 
-    return data as T;   
+    return data as T;
 }
 
 export function errorText(error: unknown): string {
