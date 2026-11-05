@@ -95,40 +95,6 @@ export class RoomService {
         };
     }
 
-    async getRoom(roomId: string){
-        //load the related data into association property names
-        const room = await this.rooms.findByPk(roomId,{
-            include: ['host','members'],
-        });
-
-        if (!room){
-            throw new NotFoundException('Room not found');
-        }
-        return {
-            ok:true,
-            room:{  
-                id: room.id,
-                roomCode: room.roomCode,
-                name: room.name,
-                status: room.status,
-                hostId: room.hostId,
-                //host comes from belongsto on room
-                host: room.host
-                ? {
-                    id: room.host.id,
-                    name: room.host.name,
-                    email: room.host.email
-                } : null,
-                //members comes from belongstomany throught participant
-                members: (room.members ??[]).map((u)=>({
-                    id: u.id,
-                    name: u.name,
-                    email: u.email,
-                })),
-            },
-        };
-    }
-
     async getRoomByCode (roomCode:string){
         const code = roomCode.trim().toUpperCase();
         const room = await this.rooms.findOne({ // gets the complete row by roomcode.
