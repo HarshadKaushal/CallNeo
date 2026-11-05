@@ -79,13 +79,18 @@ export default function Call({ room, user, onLeave }: CallProps) {
             producerId: string
             socketId: string
         }[] = []
-
-
         // only handle this error if cancelled is still active
         function showError(err: unknown) {
             if (!cancelled) {
                 setError(errorText(err));
             }
+        }
+        function listenForConnect(transport: types.Transport) {
+            transport.on('connect', ({dtlsParameters}, callback,errback) => {
+                ack(socket,'connect-transport',{transportId: transport.id, dtlsParameters})
+                .then(() => callback())
+                .catch(errback)
+            })
         }
         //asks backend to create consumer and creates corresponding browser consumer - stores it in our map
         //creates a mediastream adds that stream to remotetracks asks the server to resume consumer
@@ -104,7 +109,7 @@ export default function Call({ room, user, onLeave }: CallProps) {
                 transportId: transport.id,
                 producerId: producerId,
                 rtpCapabilities: device.recvRtpCapabilities,
-            })
+                })
 
             //create the browser side consumer 
             const consumer = await transport.consume(data)
@@ -199,16 +204,7 @@ export default function Call({ room, user, onLeave }: CallProps) {
             const recv = device.createRecvTransport(recvParams)
             //we are telling mediasoup-client to listen for the transports connection request
             //this runs right after the line 109 transport.consume for the very first consumer
-            recv.on('connect', ({ dtlsParameters }, callback, errorback) => {
-                ack(socket, 'connect-transport', {
-                    transportId: recv.id,
-                    dtlsParameters: dtlsParameters,
-                })
-                    //callback method tells mediasoup that the connection succeded
-                    .then(() => callback())
-                    //for failure
-                    .catch(errorback)
-            })
+            listenForConnect(recv);
             //save the transport so consume() and cleanup can access it
             recvTransport = recv;
 
@@ -225,16 +221,7 @@ export default function Call({ room, user, onLeave }: CallProps) {
             if (cancelled) return;
 
             const send = device.createSendTransport(sendParams)
-            send.on('connect', ({ dtlsParameters }, callback, errorback) => {
-                ack(socket, 'connect-transport', {
-                    transportId: send.id,
-                    dtlsParameters: dtlsParameters,
-                })
-                    //callback method tells mediasoup that the connection succeded
-                    .then(() => callback())
-                    //for failure
-                    .catch(errorback)
-            })
+            listenForConnect(send)
 
             send.on('produce', ({ kind, rtpParameters }, callback, errback) => {
                 ack(socket, 'produce', { transportId: send.id, kind: kind, rtpParameters: rtpParameters })
@@ -246,7 +233,6 @@ export default function Call({ room, user, onLeave }: CallProps) {
 
             //capture my local media  
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-
             //if the user lefts while the popup was forming by the browser stop it here 
             if (cancelled) {
                 stream.getTracks().forEach((track) => track.stop())
@@ -254,7 +240,6 @@ export default function Call({ room, user, onLeave }: CallProps) {
             }
             myStream = stream
             setLocalStream(stream)
-
             //stream.getTrack() return [audioTrack, videoTrack]
             //on the first iteration the track is the audio track and await send.produce({track}) sends it to mediasoup
             //on the second iteration the track is the video track and await send.produce({track}) sends it to mediasoup
@@ -266,8 +251,8 @@ export default function Call({ room, user, onLeave }: CallProps) {
             //await send.produce({ track: stream.getAudioTracks()[0] })
             //await send.produce({ track: stream.getVideoTracks()[0] })
 
-            setStatus('');
-
+            setStatus('');  
+            
         }
 
         // start is an asynchronous operation so basically we catch the error if it happens in the middle of the async execution.
@@ -292,7 +277,8 @@ export default function Call({ room, user, onLeave }: CallProps) {
     }
     function toggleMic() {
         if (!localStream) return
-        const audioTrack = localStream.getAudioTracks()[0]
+        //destructuring.
+        const [audioTrack] = localStream.getAudioTracks()
         if (audioTrack) {
             //changing true to false and false to true
             if(audioTrack.enabled == true){
@@ -305,7 +291,7 @@ export default function Call({ room, user, onLeave }: CallProps) {
     }
     function toggleCam() {
         if (!localStream) return
-        const videoTrack = localStream.getVideoTracks()[0]
+        const [videoTrack] = localStream.getVideoTracks()
         if (videoTrack) {
             if(videoTrack.enabled == true){
                 videoTrack.enabled = false;

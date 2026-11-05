@@ -11,9 +11,9 @@ import { LoginDto } from './dto/login.dto.js'
     signup(@Body() body: SignupDto){ 
       //if we are here then the validation pipeline has already checked the body.
       return this.authService.signup(
-        body.name ?? '', 
-        body.email ?? '',
-        body.password ?? '');
+        body.name, 
+        body.email,
+        body.password);
     }
   
     @Post('login')
@@ -22,7 +22,7 @@ import { LoginDto } from './dto/login.dto.js'
       @Body() 
       body: LoginDto){
       return this.authService.login(
-        body.email ?? '', 
-        body.password ?? '');
+        body.email, 
+        body.password);
     }
   }

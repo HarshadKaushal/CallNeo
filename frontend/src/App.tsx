@@ -90,9 +90,18 @@ function App() {
     )
   }
 
+  if(!user){
+    return(
+      <Login
+        onSuccess={handleAuthSuccess}
+        onGoToSignup={() => setScreen('signup')}
+      />
+    )
+  }
+
   return (
     <Home
-      currentUser={user!.name}
+      currentUser={user.name}
       onStartCall={startCall}
       onJoinCall={joinCall}
       onLogout={logout}
