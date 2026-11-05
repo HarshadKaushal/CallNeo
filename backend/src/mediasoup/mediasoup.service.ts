@@ -25,12 +25,13 @@ export class MediasoupService implements OnModuleInit, OnModuleDestroy {
         this.worker = await mediasoup.createWorker(workerSettings);
         this.logger.log(`mediasoup ${mediasoup.version} worker started (pid ${this.worker.pid})`);
 
+
         this.worker.on('died', (error) => {
             this.logger.error(`mediasoup worker died: ${error.message}`);
             setTimeout(() => process.exit(1), 2000);
         });
     }
-
+    //shutdown sequence (lifecycle hooks)
     onModuleDestroy() {
         this.worker?.close();
     }

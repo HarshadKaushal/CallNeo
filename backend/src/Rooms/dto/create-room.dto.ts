@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsUUID, MaxLength, MinLength} from "class-validator";
+import { IsString, IsUUID, MaxLength, MinLength} from "class-validator";
 export class CreateRoomDto{
     //who is creating the room
     @IsUUID()
@@ -10,9 +10,4 @@ export class CreateRoomDto{
     @MaxLength(12)
     roomCode!: string;
   
-    // Optional display name
-    @IsOptional()
-    @IsString()
-    @MaxLength(100)
-    name?: string;
 }

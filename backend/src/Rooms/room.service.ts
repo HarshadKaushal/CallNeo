@@ -34,7 +34,6 @@ export class RoomService {
         //crete the room and hostid marks the creator
         const room = await this.rooms.create({
             roomCode: code,
-            name: dto.name?.trim() || null,
             hostId: host.id,
         });
 
