@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000';
+export const API_URL = 'http://localhost:5000';
 
 
 //T is the reply shape we expect  like api < { Users:user}

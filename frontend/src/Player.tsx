@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 type PlayerProps = {
     stream: MediaStream
     kind: 'audio' | 'video'
-    label?: string
+    label: string
     muted?: boolean
 }
 

@@ -31,7 +31,7 @@ export default function Login({ onSuccess, onGoToSignup }: LoginProps) {
         <input
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="alex@gmail.com"
+          placeholder="example@gmail.com"
         />
       </label>
 

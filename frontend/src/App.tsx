@@ -12,19 +12,16 @@ type Screen = 'login' | 'signup' | 'home' | 'call'
 function App() {
   const [screen, setScreen] = useState<Screen>('login')
   const [user, setUser] = useState<User | null>(null)
-  const [message, setMessage] = useState('')
   const [room, setRoom] = useState<Room | null>(null);
 
   function handleAuthSuccess(loggedIn: User) {
     setUser(loggedIn)
-    setMessage('')
     setScreen('home')
   }
 
   function logout() {
     setUser(null)
     setRoom(null)
-    setMessage('')
     setScreen('login')
   }
 
@@ -95,7 +92,7 @@ function App() {
 
   return (
     <Home
-      currentUser={user?.name ?? ' '}
+      currentUser={user!.name}
       onStartCall={startCall}
       onJoinCall={joinCall}
       onLogout={logout}
