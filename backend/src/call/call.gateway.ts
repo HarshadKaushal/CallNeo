@@ -14,7 +14,7 @@ import { MediasoupService } from '../mediasoup/mediasoup.service.js';
 import { RoomService } from '../Rooms/room.service.js';
 import { JoinCallDto } from './dto/join-call.dto.js';
 import { ConnectTransportDto, ConsumeDto, CreateTransportDto, ProduceDto, ResumeConsumerDto } from './dto/media.dto.js';
-
+import { ChatMessageDto } from './dto/chat-message.dto.js';
 //this function basically catches the error from the server that the browser expects to see
 //if we dont catch the error it will propogate to the WsException handling.
 function errorMessage(error: unknown): string {
@@ -66,6 +66,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     socket.data.roomId = body.roomId;
     socket.data.userId = body.userId;
+    socket.data.userName = body.userName
 
     const others = await this.server.in(body.roomId).fetchSockets();
     await socket.join(body.roomId);
@@ -108,6 +109,7 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await socket.leave(roomId);
     socket.data.roomId = undefined;
     socket.data.userId = undefined;
+    socket.data.userName = undefined;
 
     const remaining = await this.server.in(roomId).fetchSockets();
     if (remaining.length === 0) {
@@ -208,5 +210,28 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     catch(error){
       return {ok:false,error: errorMessage(error)};
     }
+  }
+
+  @SubscribeMessage('chat-message')
+  async chatMessage(@ConnectedSocket() socket: Socket, @MessageBody() body: ChatMessageDto){
+    const roomId: string | undefined = socket.data.roomId;
+    if(!roomId){
+      return {ok:false,error:'Join a room first'};
+    }
+    const text = body.text.trim();
+    if(!text){
+      return {ok:false, error:'Message is empty'};
+    }
+
+    const message = {
+      id: crypto.randomUUID(),
+      text,
+      userId: socket.data.userId,
+      userName: (socket.data.userName) || 'Unknown',
+      sentAt: new Date().toISOString(),
+    };
+
+    this.server.to(roomId).emit('chat-message',message);
+    return {ok: true};
   }
 }

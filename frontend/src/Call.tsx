@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { io } from 'socket.io-client'
 import type { Socket } from 'socket.io-client'
 import { Device } from 'mediasoup-client'
@@ -12,6 +12,14 @@ type CallProps = {
     room: Room,
     user: User,
     onLeave: () => void
+}
+
+type ChatMessage = {
+    id: string
+    text: string
+    userId: string
+    userName: string
+    sentAt: string
 }
 
 type Peer = {
@@ -47,6 +55,9 @@ export default function Call({ room, user, onLeave }: CallProps) {
     const [localStream, setLocalStream] = useState<MediaStream | null>(null)
     const [micOn, setMicOn] = useState(true)
     const [camOn, setCamOn] = useState(true)
+    const [messages, setMessages] = useState<ChatMessage[]>([])
+    const [draft,setDraft] = useState('')
+    const socketRef = useRef<Socket | null>(null)
 
     useEffect(() => {
 
@@ -55,7 +66,7 @@ export default function Call({ room, user, onLeave }: CallProps) {
 
         // attempts to establish a connection to server for signaling communication
         const socket = io(API_URL)
-
+        socketRef.current = socket
         // here the device will represent the clients capabilities for communicating with a mediasoup server
         // such as rtp codecs
         // mediaCapabilites and how the client can communicate
@@ -133,6 +144,10 @@ export default function Call({ room, user, onLeave }: CallProps) {
 
         // socket.on is basically listening for an event from the server named peer-joined
         // this callback will revieve and objec called peer and then we update the peer state
+        socket.on('chat-message', (message: ChatMessage) => {
+            setMessages((old)=>[...old,message])
+        })
+
         socket.on('peer-joined', (peer: Peer) => {
             setPeers((old) => [...old, peer])
         })
@@ -183,7 +198,8 @@ export default function Call({ room, user, onLeave }: CallProps) {
             // first function is join the room.
             const joined = await ack(socket, 'join', {
                 roomId: room.id,
-                userId: user.id
+                userId: user.id,
+                userName: user.name,
             });
 
             if (cancelled) return;
@@ -266,6 +282,7 @@ export default function Call({ room, user, onLeave }: CallProps) {
             sendTransport?.close()
             recvTransport?.close()
             socket.disconnect()
+            socketRef.current = null
         }
     }, [room.id, user.id])
 
@@ -275,6 +292,22 @@ export default function Call({ room, user, onLeave }: CallProps) {
         const peer = peers.find((p) => p.socketId === socketId)
         return peer ? 'user' + peer.userId.slice(0, 8) : 'something broke'
     }
+
+    async function sendChat(event: React.FormEvent){
+        event.preventDefault()
+        const socket = socketRef.current
+        const text = draft.trim()
+        if (!socket || !text) {
+            return
+        }
+        try {
+            await ack(socket, 'chat-message', {text})
+            setDraft('')
+        } catch(err){
+            setError(errorText(err))
+        }
+    }
+
     function toggleMic() {
         if (!localStream) return
         //destructuring.
@@ -337,6 +370,23 @@ export default function Call({ room, user, onLeave }: CallProps) {
                     Leave
                 </button>
             </div>
+
+            <form onSubmit={sendChat}>
+                <ul>
+                    {messages.map((message) => (
+                        <li key ={message.id}>
+                            <strong>{message.userName}</strong>: {message.text}
+                        </li>
+                    ))}
+                </ul>
+                <input
+                    value={draft}
+                    onChange={(event)=> setDraft(event.target.value)}
+                    placeholder="Message"
+                    maxLength={500}
+                />
+                <button type = "submit">Send</button>
+            </form>
         </main>
     )
 }
