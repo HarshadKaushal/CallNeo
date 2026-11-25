@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsString, MaxLength } from 'class-validator';
 
 export class JoinCallDto {
   @IsUUID()
@@ -7,4 +7,9 @@ export class JoinCallDto {
 
   @IsUUID()
   userId!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  userName!: string;
 }
